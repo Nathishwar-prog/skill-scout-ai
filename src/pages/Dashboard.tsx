@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ResumeUpload from '@/components/dashboard/ResumeUpload';
 import JDAnalysisResults from '@/components/dashboard/JDAnalysisResults';
 import ResumeImprovements from '@/components/dashboard/ResumeImprovements';
+import AnalysisHistory from '@/components/dashboard/AnalysisHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -56,7 +57,24 @@ const Dashboard = () => {
         throw new Error(data.error);
       }
 
-      setJdAnalysis(data.analysis);
+      const analysisResult = data.analysis;
+      setJdAnalysis(analysisResult);
+
+      // Save to history
+      if (user) {
+        const { error: saveError } = await supabase
+          .from('analysis_history')
+          .insert({
+            user_id: user.id,
+            resume_text: content,
+            job_description: jd,
+            analysis_results: analysisResult
+          });
+
+        if (saveError) {
+          console.error('Failed to save analysis:', saveError);
+        }
+      }
 
       // Also fetch improvements
       const { data: improveData, error: improveError } = await supabase.functions.invoke('improve-resume', {
@@ -87,6 +105,18 @@ const Dashboard = () => {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleSelectHistoryAnalysis = (record: any) => {
+    setResumeText(record.resume_text);
+    setJobDescription(record.job_description);
+    setJdAnalysis(record.analysis_results);
+    setImprovements(null); // Clear improvements when loading from history
+    setActiveTab('overview');
+    toast({
+      title: 'Analysis Loaded',
+      description: 'Viewing saved analysis from history'
+    });
   };
 
   if (isLoading || !isAuthenticated) return null;
@@ -253,6 +283,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )
+      )}
+
+      {activeTab === 'history' && (
+        <AnalysisHistory onSelectAnalysis={handleSelectHistoryAnalysis} />
       )}
     </DashboardLayout>
   );

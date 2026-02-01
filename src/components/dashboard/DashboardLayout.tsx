@@ -6,6 +6,7 @@ import {
   Upload, 
   Target, 
   Sparkles, 
+  History,
   Settings,
   LogOut,
   Menu,
@@ -25,6 +26,7 @@ const tabs = [
   { id: 'upload', name: 'Resume + JD', icon: Upload },
   { id: 'job-match', name: 'Job Match', icon: Target },
   { id: 'improvements', name: 'Improvements', icon: Sparkles },
+  { id: 'history', name: 'History', icon: History },
 ];
 
 const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardLayoutProps) => {
