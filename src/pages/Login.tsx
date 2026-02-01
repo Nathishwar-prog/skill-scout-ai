@@ -23,8 +23,8 @@ const Login = () => {
       await login(email, password);
       toast({ title: 'Welcome back!', description: 'Successfully logged in.' });
       navigate('/dashboard');
-    } catch (error) {
-      toast({ title: 'Error', description: 'Invalid credentials.', variant: 'destructive' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Invalid credentials.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }

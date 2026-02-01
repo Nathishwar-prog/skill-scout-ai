@@ -79,10 +79,10 @@ const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardLayoutPr
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3 mb-4 px-2">
               <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
-                {user?.name?.charAt(0) || 'U'}
+                {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{user?.name || 'User'}</p>
+                <p className="font-medium truncate">{user?.user_metadata?.full_name || 'User'}</p>
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>

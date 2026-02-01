@@ -22,10 +22,13 @@ const Signup = () => {
     setIsLoading(true);
     try {
       await signup(email, password, name);
-      toast({ title: 'Account created!', description: 'Welcome to SkillSync AI.' });
-      navigate('/dashboard');
-    } catch (error) {
-      toast({ title: 'Error', description: 'Could not create account.', variant: 'destructive' });
+      toast({ 
+        title: 'Account created!', 
+        description: 'Please check your email to verify your account before signing in.' 
+      });
+      navigate('/login');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Could not create account.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
