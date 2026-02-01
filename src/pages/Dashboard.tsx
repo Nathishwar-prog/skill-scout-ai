@@ -150,7 +150,7 @@ const generateImprovements = () => ({
 });
 
 const Dashboard = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -159,10 +159,10 @@ const Dashboard = () => {
   const [improvements, setImprovements] = useState<any>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       navigate('/login');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleResumeUpload = async (content: string, fileName?: string) => {
     setIsAnalyzing(true);
@@ -181,7 +181,7 @@ const Dashboard = () => {
     console.log('Selected role:', roleId);
   };
 
-  if (!isAuthenticated) return null;
+  if (isLoading || !isAuthenticated) return null;
 
   return (
     <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
