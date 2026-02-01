@@ -22,7 +22,7 @@ interface DashboardLayoutProps {
 
 const tabs = [
   { id: 'overview', name: 'Overview', icon: LayoutDashboard },
-  { id: 'upload', name: 'Upload Resume', icon: Upload },
+  { id: 'upload', name: 'Resume + JD', icon: Upload },
   { id: 'job-match', name: 'Job Match', icon: Target },
   { id: 'improvements', name: 'Improvements', icon: Sparkles },
 ];
