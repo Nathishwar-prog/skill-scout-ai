@@ -10,9 +10,11 @@ import {
   ChevronDown,
   ChevronUp,
   Edit3,
-  Save
+  Save,
+  FileDown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
 
 interface ResumeSections {
   header: string;
@@ -56,7 +58,7 @@ const ResumeBuilder = ({ improvedResume, sections: initialSections, onClose }: R
     toast({ title: 'Copied!', description: `${sectionLabels[sectionKey]} copied to clipboard.` });
   };
 
-  const handleDownload = () => {
+  const handleDownloadTxt = () => {
     const fullResume = Object.entries(sections)
       .map(([key, value]) => `=== ${sectionLabels[key as keyof ResumeSections].toUpperCase()} ===\n\n${value}`)
       .join('\n\n\n');
@@ -69,6 +71,51 @@ const ResumeBuilder = ({ improvedResume, sections: initialSections, onClose }: R
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Downloaded!', description: 'Resume saved as improved-resume.txt' });
+  };
+
+  const handleDownloadPdf = () => {
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 20;
+    const maxWidth = pageWidth - margin * 2;
+    let yPosition = margin;
+
+    const addSection = (title: string, content: string) => {
+      // Check if we need a new page
+      if (yPosition > 270) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+
+      // Section title
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(title.toUpperCase(), margin, yPosition);
+      yPosition += 8;
+
+      // Section content
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const lines = pdf.splitTextToSize(content, maxWidth);
+      
+      for (const line of lines) {
+        if (yPosition > 280) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        pdf.text(line, margin, yPosition);
+        yPosition += 5;
+      }
+      
+      yPosition += 10;
+    };
+
+    (Object.keys(sections) as Array<keyof ResumeSections>).forEach((sectionKey) => {
+      addSection(sectionLabels[sectionKey], sections[sectionKey]);
+    });
+
+    pdf.save('improved-resume.pdf');
+    toast({ title: 'Downloaded!', description: 'Resume saved as improved-resume.pdf' });
   };
 
   const handleSectionChange = (sectionKey: keyof ResumeSections, value: string) => {
@@ -106,9 +153,13 @@ const ResumeBuilder = ({ improvedResume, sections: initialSections, onClose }: R
                 {copied ? <CheckCircle className="mr-2 h-4 w-4 text-success" /> : <Copy className="mr-2 h-4 w-4" />}
                 Copy All
               </Button>
-              <Button size="sm" onClick={handleDownload} className="gradient-primary">
+              <Button variant="outline" size="sm" onClick={handleDownloadTxt}>
                 <Download className="mr-2 h-4 w-4" />
-                Download TXT
+                TXT
+              </Button>
+              <Button size="sm" onClick={handleDownloadPdf} className="gradient-primary">
+                <FileDown className="mr-2 h-4 w-4" />
+                PDF
               </Button>
             </div>
           </div>
