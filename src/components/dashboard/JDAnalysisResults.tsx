@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  CheckCircle,
+  AlertTriangle,
   XCircle,
   Target,
   BarChart3,
@@ -106,12 +106,11 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
   return (
     <div className="space-y-6">
       {/* Overall Verdict Banner */}
-      <Card className={`border-2 ${
-        analysis.overallVerdict.includes('Strong') ? 'border-success bg-success/5' :
-        analysis.overallVerdict.includes('Good') ? 'border-success/70 bg-success/5' :
-        analysis.overallVerdict.includes('Moderate') ? 'border-warning bg-warning/5' :
-        'border-destructive bg-destructive/5'
-      }`}>
+      <Card className={`border-2 ${analysis.overallVerdict.includes('Strong') ? 'border-success bg-success/5' :
+          analysis.overallVerdict.includes('Good') ? 'border-success/70 bg-success/5' :
+            analysis.overallVerdict.includes('Moderate') ? 'border-warning bg-warning/5' :
+              'border-destructive bg-destructive/5'
+        }`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
@@ -202,11 +201,11 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
         </Card>
 
         {/* Similarity Score */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 border-primary/20 bg-primary/5">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className={`p-2 rounded-lg ${getScoreBgColor(analysis.similarityScore)}`}>
-                <BarChart3 className={`h-5 w-5 ${getScoreColor(analysis.similarityScore)}`} />
+                <Brain className={`h-5 w-5 ${getScoreColor(analysis.similarityScore)}`} />
               </div>
               {analysis.similarityScore >= 80 ? (
                 <CheckCircle className="h-5 w-5 text-success" />
@@ -219,7 +218,8 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
             <p className={`text-3xl font-bold ${getScoreColor(analysis.similarityScore)}`}>
               {analysis.similarityScore}%
             </p>
-            <p className="text-sm text-muted-foreground">Similarity</p>
+            <p className="text-sm font-medium text-foreground">AI Semantic Match</p>
+            <p className="text-xs text-muted-foreground mb-2">Deterministic SBERT Score</p>
             <Progress value={analysis.similarityScore} className="h-2 mt-2" />
           </CardContent>
         </Card>
@@ -273,82 +273,82 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
       </div>
 
       {/* Skill Gap Analysis */}
-      {(skillGapAnalysis.critical.length > 0 || 
+      {(skillGapAnalysis.critical.length > 0 ||
         skillGapAnalysis.important.length > 0 ||
         skillGapAnalysis.nice_to_have.length > 0) && (
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              Skill Gap Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Critical Skills */}
-            {skillGapAnalysis.critical.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Critical Skills to Address
-                </h4>
-                <div className="space-y-2">
-                  {skillGapAnalysis.critical.map((item, index) => (
-                    <div key={index} className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">{item.skill}</span>
-                        <Badge variant="destructive" className="text-xs">Critical</Badge>
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Skill Gap Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Critical Skills */}
+              {skillGapAnalysis.critical.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Critical Skills to Address
+                  </h4>
+                  <div className="space-y-2">
+                    {skillGapAnalysis.critical.map((item, index) => (
+                      <div key={index} className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">{item.skill}</span>
+                          <Badge variant="destructive" className="text-xs">Critical</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{item.recommendation}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{item.recommendation}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Important Skills */}
-            {skillGapAnalysis.important.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-warning mb-2 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Important Skills to Improve
-                </h4>
-                <div className="space-y-2">
-                  {skillGapAnalysis.important.map((item, index) => (
-                    <div key={index} className="p-3 rounded-lg bg-warning/5 border border-warning/20">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">{item.skill}</span>
-                        <Badge className="bg-warning text-warning-foreground text-xs">Important</Badge>
+              {/* Important Skills */}
+              {skillGapAnalysis.important.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-warning mb-2 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Important Skills to Improve
+                  </h4>
+                  <div className="space-y-2">
+                    {skillGapAnalysis.important.map((item, index) => (
+                      <div key={index} className="p-3 rounded-lg bg-warning/5 border border-warning/20">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">{item.skill}</span>
+                          <Badge className="bg-warning text-warning-foreground text-xs">Important</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{item.recommendation}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{item.recommendation}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Nice to Have */}
-            {skillGapAnalysis.nice_to_have.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4" />
-                  Nice to Have
-                </h4>
-                <div className="space-y-2">
-                  {skillGapAnalysis.nice_to_have.map((item, index) => (
-                    <div key={index} className="p-3 rounded-lg bg-muted/50 border border-border/50">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">{item.skill}</span>
-                        <Badge variant="outline" className="text-xs">Nice to Have</Badge>
+              {/* Nice to Have */}
+              {skillGapAnalysis.nice_to_have.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4" />
+                    Nice to Have
+                  </h4>
+                  <div className="space-y-2">
+                    {skillGapAnalysis.nice_to_have.map((item, index) => (
+                      <div key={index} className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">{item.skill}</span>
+                          <Badge variant="outline" className="text-xs">Nice to Have</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{item.recommendation}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{item.recommendation}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              )}
+            </CardContent>
+          </Card>
+        )}
 
       {/* Experience Analysis */}
       <Card className="border-border/50">
@@ -370,12 +370,11 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
             </div>
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">Match Level</p>
-              <p className={`font-semibold ${
-                experienceAnalysis.experienceMatch === 'Exceeds' ? 'text-success' :
-                experienceAnalysis.experienceMatch === 'Meets' ? 'text-success' :
-                experienceAnalysis.experienceMatch === 'Below' ? 'text-warning' :
-                'text-destructive'
-              }`}>
+              <p className={`font-semibold ${experienceAnalysis.experienceMatch === 'Exceeds' ? 'text-success' :
+                  experienceAnalysis.experienceMatch === 'Meets' ? 'text-success' :
+                    experienceAnalysis.experienceMatch === 'Below' ? 'text-warning' :
+                      'text-destructive'
+                }`}>
                 {experienceAnalysis.experienceMatch}
               </p>
             </div>

@@ -1,24 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateOllamaResponse, parseJsonWithRetry } from "../_shared/ollama-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const systemPrompt = `You are an expert ATS (Applicant Tracking System) analyzer and hiring manager. Your job is to compare a candidate's resume against a specific job description and provide detailed matching analysis.
-
-You must evaluate:
-1. ATS Score (0-100): How well the resume would pass automated screening systems for this specific job
-2. Job Match Percentage (0-100): Overall alignment between candidate qualifications and job requirements
-3. Skill Match Percentage (0-100): How many required skills from the JD the candidate possesses
-4. Similarity Score (0-100): Semantic similarity between resume content and JD expectations
-5. Detailed Skill Gap Analysis: Skills required by JD but missing/weak in resume
-
-Be strict and realistic. Real ATS systems are harsh. Consider:
-- Exact keyword matches vs semantic matches
-- Years of experience requirements
-- Required vs preferred qualifications
-- Industry-specific terminology`;
+const systemPrompt = `You are an expert ATS (Applicant Tracking System) analyzer and hiring manager.
+You must follow instructions strictly.
+You must output valid JSON only.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -42,123 +32,116 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Step 1: Call SBERT Service for Semantic Similarity
+    console.log("Calling SBERT service...");
+    let similarityScore = 0;
+    let sbertError = null;
+
+    // In a real production env, this URL should be an env var
+    // For this local setup, assuming the python service runs on localhost:8000
+    // Note: Deno deploy might need a deployed URL. For local dev, we use the local python service.
+    // If running inside Docker/etc, hostname might differ.
+    try {
+      // Use host.docker.internal to allow access to the host machine from within the Docker container
+      const sbertResponse = await fetch("http://host.docker.internal:8000/similarity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resume_text: resumeText,
+          job_description: jobDescription
+        })
+      });
+
+      if (sbertResponse.ok) {
+        const sbertData = await sbertResponse.json();
+        similarityScore = sbertData.similarity_score;
+        console.log("SBERT Similarity Score:", similarityScore);
+      } else {
+        const errText = await sbertResponse.text();
+        console.error("SBERT Service error:", sbertResponse.status, errText);
+        sbertError = `SBERT Error: ${sbertResponse.status}`;
+      }
+    } catch (err) {
+      console.error("Failed to call SBERT service:", err);
+      sbertError = "SBERT Service unreachable";
+      // Fallback or just proceed with 0 similarity (or handle gracefully)
     }
 
-    const userPrompt = `Compare this resume against the job description and provide detailed analysis.
+    // Step 2: Call Ollama with the pre-calculated similarity score
+    const maxChars = 5000;
+    const truncatedResume = resumeText.length > maxChars ? resumeText.substring(0, maxChars) + "..." : resumeText;
+    const truncatedJD = jobDescription.length > maxChars ? jobDescription.substring(0, maxChars) + "..." : jobDescription;
 
-=== JOB DESCRIPTION ===
-${jobDescription}
+    const userPrompt = `
+<<<RESUME>>>
+${truncatedResume}
+<<<END>>>
 
-=== RESUME ===
-${resumeText}
+<<<JOB_DESCRIPTION>>>
+${truncatedJD}
+<<<END>>>
 
-Provide your analysis in the following JSON format (respond ONLY with valid JSON, no markdown):
+TASK:
+Compare the resume against the job description.
+**IMPORTANT**: The calculated Semantic Similarity Score (SBERT) for this pair is: **${similarityScore}**.
+Use this score as the ground truth for "similarityScore".
+
+RULES:
+- Do not include markdown
+- Do not include explanations
+- Output valid JSON only
+- Follow this exact JSON structure:
 {
   "atsScore": <number 0-100>,
   "jobMatchPercentage": <number 0-100>,
   "skillMatchPercentage": <number 0-100>,
-  "similarityScore": <number 0-100>,
+  "similarityScore": <number 0-100 (MUST MATCH provided SBERT score: ${similarityScore})>,
   "overallVerdict": "<Strong Match|Good Match|Moderate Match|Weak Match|Poor Match>",
-  "verdictExplanation": "<2-3 sentence summary of the match quality>",
-  "requiredSkillsFromJD": ["<skill1>", "<skill2>", ...list all skills mentioned in JD],
-  "matchedSkills": ["<skill1>", "<skill2>", ...skills candidate has that match JD],
-  "missingSkills": ["<skill1>", "<skill2>", ...skills required by JD but missing in resume],
-  "partialSkills": ["<skill1>", "<skill2>", ...skills mentioned but need more depth],
+  "verdictExplanation": "<2-3 sentence summary>",
+  "requiredSkillsFromJD": ["<skill1>", "<skill2>", ...],
+  "matchedSkills": ["<skill1>", "<skill2>", ...],
+  "missingSkills": ["<skill1>", "<skill2>", ...],
+  "partialSkills": ["<skill1>", "<skill2>", ...],
   "skillGapAnalysis": {
-    "critical": [
-      {"skill": "<skill name>", "importance": "critical", "recommendation": "<specific action to address>"}
-    ],
-    "important": [
-      {"skill": "<skill name>", "importance": "important", "recommendation": "<specific action to address>"}
-    ],
-    "nice_to_have": [
-      {"skill": "<skill name>", "importance": "nice_to_have", "recommendation": "<specific action to address>"}
-    ]
+    "critical": [{"skill": "...", "importance": "critical", "recommendation": "..."}],
+    "important": [{"skill": "...", "importance": "important", "recommendation": "..."}],
+    "nice_to_have": [{"skill": "...", "importance": "nice_to_have", "recommendation": "..."}]
   },
   "experienceAnalysis": {
-    "requiredYears": "<X years or entry-level>",
-    "candidateYears": "<estimated years based on resume>",
+    "requiredYears": "<X years>",
+    "candidateYears": "<estimated years>",
     "experienceMatch": "<Exceeds|Meets|Below|Significantly Below>",
-    "relevantExperience": ["<relevant experience 1>", "<relevant experience 2>"]
+    "relevantExperience": ["...", "..."]
   },
   "keywordAnalysis": {
-    "matchedKeywords": ["<keyword1>", "<keyword2>", ...],
-    "missingKeywords": ["<keyword1>", "<keyword2>", ...important JD keywords not in resume],
+    "matchedKeywords": ["...", "..."],
+    "missingKeywords": ["...", "..."],
     "keywordDensityScore": <number 0-100>
   },
-  "recommendations": [
-    "<specific actionable recommendation 1>",
-    "<specific actionable recommendation 2>",
-    "<specific actionable recommendation 3>",
-    "<specific actionable recommendation 4>",
-    "<specific actionable recommendation 5>"
-  ],
-  "strengths": [
-    "<strength 1 relative to this JD>",
-    "<strength 2 relative to this JD>",
-    "<strength 3 relative to this JD>"
-  ],
-  "weaknesses": [
-    "<weakness 1 relative to this JD>",
-    "<weakness 2 relative to this JD>",
-    "<weakness 3 relative to this JD>"
-  ]
-}`;
+  "recommendations": ["...", "..."],
+  "strengths": ["...", "..."],
+  "weaknesses": ["...", "..."]
+}
+Respond with JSON only.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
+    // Call Ollama
+    const taskType = "structured_analysis"; // Routes to Phi3
+    const rawResponse = await generateOllamaResponse(systemPrompt, userPrompt, taskType);
+
+    // Parse JSON safely
+    const analysis = await parseJsonWithRetry(rawResponse, async () => {
+      // Retry callback if parsing fails
+      console.log("Retrying JSON generation for compare-jd...");
+      return await generateOllamaResponse(systemPrompt, userPrompt + "\n\nIMPORTANT: Your previous response was invalid JSON. Output ONLY valid JSON now.", taskType);
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("No content in AI response");
-    }
-
-    let analysis;
-    try {
-      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
-      analysis = JSON.parse(cleanContent);
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", content);
-      throw new Error("Failed to parse JD comparison response");
+    // Enforce the SBERT score if it exists
+    if (similarityScore !== 0) {
+      analysis.similarityScore = similarityScore;
     }
 
     return new Response(
-      JSON.stringify({ success: true, analysis }),
+      JSON.stringify({ success: true, analysis, sbertOf: sbertError ? "failed" : "success" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

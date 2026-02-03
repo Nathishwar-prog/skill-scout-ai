@@ -12,10 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  FileText, 
-  TrendingUp, 
-  Target, 
+import {
+  FileText,
+  TrendingUp,
+  Target,
   BarChart3,
   ChevronRight,
   Upload,
@@ -34,7 +34,7 @@ const Dashboard = () => {
   const [improvements, setImprovements] = useState<any>(null);
   const [resumeText, setResumeText] = useState<string>('');
   const [jobDescription, setJobDescription] = useState<string>('');
-  
+
   // New states for regenerate and resume builder
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
@@ -51,11 +51,22 @@ const Dashboard = () => {
     setResumeText(content);
     setJobDescription(jd);
     setImprovedResume(null); // Clear any previous built resume
-    
+
     try {
+      // DEBUG: Force use of generated key to rule out session issues
+      const token = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      console.log("Using Auth Token:", token?.substring(0, 10) + "...");
+
+      // Sanitize inputs to remove null bytes (Postgres error 22P05)
+      const cleanResume = content.replace(/\0/g, '');
+      const cleanJD = jd.replace(/\0/g, '');
+
       // Call the AI-powered JD comparison edge function
       const { data, error } = await supabase.functions.invoke('compare-jd', {
-        body: { resumeText: content, jobDescription: jd }
+        body: { resumeText: cleanResume, jobDescription: cleanJD },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       if (error) {
@@ -75,8 +86,8 @@ const Dashboard = () => {
           .from('analysis_history')
           .insert({
             user_id: user.id,
-            resume_text: content,
-            job_description: jd,
+            resume_text: cleanResume,
+            job_description: cleanJD,
             analysis_results: analysisResult
           });
 
@@ -87,7 +98,10 @@ const Dashboard = () => {
 
       // Also fetch improvements
       const { data: improveData, error: improveError } = await supabase.functions.invoke('improve-resume', {
-        body: { resumeText: content, targetRole: jd.substring(0, 500) }
+        body: { resumeText: content, targetRole: jd.substring(0, 500) },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       if (!improveError && improveData.improvements) {
@@ -99,15 +113,15 @@ const Dashboard = () => {
       }
 
       setActiveTab('overview');
-      toast({ 
-        title: 'Analysis Complete!', 
-        description: 'Your resume has been analyzed against the job description.' 
+      toast({
+        title: 'Analysis Complete!',
+        description: 'Your resume has been analyzed against the job description.'
       });
 
     } catch (error: any) {
       console.error('Resume analysis error:', error);
-      toast({ 
-        title: 'Analysis Failed', 
+      toast({
+        title: 'Analysis Failed',
         description: error.message || 'Could not analyze resume. Please try again.',
         variant: 'destructive'
       });
@@ -142,8 +156,14 @@ const Dashboard = () => {
 
     setIsRegenerating(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const { data, error } = await supabase.functions.invoke('improve-resume', {
-        body: { resumeText, targetRole: jobDescription?.substring(0, 500) }
+        body: { resumeText, targetRole: jobDescription?.substring(0, 500) },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       if (error) {
@@ -189,12 +209,18 @@ const Dashboard = () => {
 
     setIsGeneratingResume(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const { data, error } = await supabase.functions.invoke('generate-improved-resume', {
         body: {
           originalResume: resumeText,
           improvements: improvements.improvements,
           suggestedTitle: improvements.suggestedTitle,
           targetRole: jobDescription?.substring(0, 500)
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -290,21 +316,21 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-4">
-                    <Progress 
+                    <Progress
                       value={Math.round(
-                        (jdAnalysis.atsScore + 
-                         jdAnalysis.jobMatchPercentage + 
-                         jdAnalysis.skillMatchPercentage + 
-                         jdAnalysis.similarityScore) / 4
-                      )} 
-                      className="h-4 flex-1" 
+                        (jdAnalysis.atsScore +
+                          jdAnalysis.jobMatchPercentage +
+                          jdAnalysis.skillMatchPercentage +
+                          jdAnalysis.similarityScore) / 4
+                      )}
+                      className="h-4 flex-1"
                     />
                     <span className="text-2xl font-bold text-primary">
                       {Math.round(
-                        (jdAnalysis.atsScore + 
-                         jdAnalysis.jobMatchPercentage + 
-                         jdAnalysis.skillMatchPercentage + 
-                         jdAnalysis.similarityScore) / 4
+                        (jdAnalysis.atsScore +
+                          jdAnalysis.jobMatchPercentage +
+                          jdAnalysis.skillMatchPercentage +
+                          jdAnalysis.similarityScore) / 4
                       )}%
                     </span>
                   </div>
@@ -376,14 +402,14 @@ const Dashboard = () => {
 
       {activeTab === 'improvements' && (
         improvedResume ? (
-          <ResumeBuilder 
+          <ResumeBuilder
             improvedResume={improvedResume.improvedResume}
             sections={improvedResume.sections}
             onClose={() => setImprovedResume(null)}
           />
         ) : improvements ? (
-          <ResumeImprovements 
-            {...improvements} 
+          <ResumeImprovements
+            {...improvements}
             onBuildResume={handleGenerateImprovedResume}
             isBuilding={isGeneratingResume}
           />
@@ -397,8 +423,8 @@ const Dashboard = () => {
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Get AI-powered suggestions to improve your resume bullet points using the STAR method
               </p>
-              <Button 
-                onClick={handleRegenerateImprovements} 
+              <Button
+                onClick={handleRegenerateImprovements}
                 disabled={isRegenerating}
                 className="gradient-primary"
               >
