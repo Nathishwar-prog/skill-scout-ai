@@ -7,7 +7,9 @@ import {
   Download, 
   Sparkles, 
   RefreshCw,
-  CheckCircle
+  CheckCircle,
+  FileText,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,9 +23,17 @@ interface ResumeImprovementsProps {
   improvements: Improvement[];
   suggestedTitle: string;
   projectIdeas: string[];
+  onBuildResume?: () => void;
+  isBuilding?: boolean;
 }
 
-const ResumeImprovements = ({ improvements, suggestedTitle, projectIdeas }: ResumeImprovementsProps) => {
+const ResumeImprovements = ({ 
+  improvements, 
+  suggestedTitle, 
+  projectIdeas, 
+  onBuildResume, 
+  isBuilding 
+}: ResumeImprovementsProps) => {
   const { toast } = useToast();
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -50,6 +60,36 @@ const ResumeImprovements = ({ improvements, suggestedTitle, projectIdeas }: Resu
 
   return (
     <div className="space-y-6">
+      {/* Build Resume CTA */}
+      {onBuildResume && (
+        <Card className="border-border/50 bg-gradient-to-br from-primary/10 to-accent/10">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Ready to create your improved resume?</p>
+              <p className="text-sm text-muted-foreground">
+                Generate a polished resume with all improvements applied automatically
+              </p>
+            </div>
+            <Button 
+              onClick={onBuildResume} 
+              disabled={isBuilding}
+              className="gradient-primary"
+            >
+              {isBuilding ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Building...
+                </>
+              ) : (
+                <>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Build Improved Resume
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       {/* Suggested Title */}
       <Card className="border-border/50 border-primary/30 bg-primary/5">
         <CardHeader className="pb-3">
