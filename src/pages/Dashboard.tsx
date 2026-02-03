@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ResumeUpload from '@/components/dashboard/ResumeUpload';
 import JDAnalysisResults from '@/components/dashboard/JDAnalysisResults';
 import ResumeImprovements from '@/components/dashboard/ResumeImprovements';
+import ResumeBuilder from '@/components/dashboard/ResumeBuilder';
 import AnalysisHistory from '@/components/dashboard/AnalysisHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,9 @@ import {
   BarChart3,
   ChevronRight,
   Upload,
-  Zap
+  Zap,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -31,6 +34,11 @@ const Dashboard = () => {
   const [improvements, setImprovements] = useState<any>(null);
   const [resumeText, setResumeText] = useState<string>('');
   const [jobDescription, setJobDescription] = useState<string>('');
+  
+  // New states for regenerate and resume builder
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isGeneratingResume, setIsGeneratingResume] = useState(false);
+  const [improvedResume, setImprovedResume] = useState<any>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -42,6 +50,7 @@ const Dashboard = () => {
     setIsAnalyzing(true);
     setResumeText(content);
     setJobDescription(jd);
+    setImprovedResume(null); // Clear any previous built resume
     
     try {
       // Call the AI-powered JD comparison edge function
@@ -112,11 +121,110 @@ const Dashboard = () => {
     setJobDescription(record.job_description);
     setJdAnalysis(record.analysis_results);
     setImprovements(null); // Clear improvements when loading from history
+    setImprovedResume(null); // Clear built resume
     setActiveTab('overview');
     toast({
       title: 'Analysis Loaded',
       description: 'Viewing saved analysis from history'
     });
+  };
+
+  // Regenerate improvements for historical analysis
+  const handleRegenerateImprovements = async () => {
+    if (!resumeText) {
+      toast({
+        title: 'No Resume Available',
+        description: 'Please upload a resume first.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsRegenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('improve-resume', {
+        body: { resumeText, targetRole: jobDescription?.substring(0, 500) }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to generate improvements');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setImprovements({
+        improvements: data.improvements,
+        suggestedTitle: data.suggestedTitle,
+        projectIdeas: data.projectIdeas
+      });
+
+      toast({
+        title: 'Improvements Generated!',
+        description: 'AI suggestions are ready for review.'
+      });
+    } catch (error: any) {
+      console.error('Generate improvements error:', error);
+      toast({
+        title: 'Generation Failed',
+        description: error.message || 'Could not generate improvements.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  // Generate improved resume with all suggestions applied
+  const handleGenerateImprovedResume = async () => {
+    if (!resumeText || !improvements) {
+      toast({
+        title: 'Missing Data',
+        description: 'Resume and improvements are required.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsGeneratingResume(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-improved-resume', {
+        body: {
+          originalResume: resumeText,
+          improvements: improvements.improvements,
+          suggestedTitle: improvements.suggestedTitle,
+          targetRole: jobDescription?.substring(0, 500)
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to build resume');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setImprovedResume({
+        improvedResume: data.improvedResume,
+        sections: data.sections
+      });
+
+      toast({
+        title: 'Resume Built!',
+        description: 'Your improved resume is ready to download.'
+      });
+    } catch (error: any) {
+      console.error('Build resume error:', error);
+      toast({
+        title: 'Build Failed',
+        description: error.message || 'Could not build improved resume.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGeneratingResume(false);
+    }
   };
 
   if (isLoading || !isAuthenticated) return null;
@@ -267,8 +375,47 @@ const Dashboard = () => {
       )}
 
       {activeTab === 'improvements' && (
-        improvements ? (
-          <ResumeImprovements {...improvements} />
+        improvedResume ? (
+          <ResumeBuilder 
+            improvedResume={improvedResume.improvedResume}
+            sections={improvedResume.sections}
+            onClose={() => setImprovedResume(null)}
+          />
+        ) : improvements ? (
+          <ResumeImprovements 
+            {...improvements} 
+            onBuildResume={handleGenerateImprovedResume}
+            isBuilding={isGeneratingResume}
+          />
+        ) : resumeText ? (
+          <Card className="border-border/50 border-dashed">
+            <CardContent className="py-16 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                <Sparkles className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Generate AI Improvements</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Get AI-powered suggestions to improve your resume bullet points using the STAR method
+              </p>
+              <Button 
+                onClick={handleRegenerateImprovements} 
+                disabled={isRegenerating}
+                className="gradient-primary"
+              >
+                {isRegenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Improvements
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <Card className="border-border/50 border-dashed">
             <CardContent className="py-16 text-center">
