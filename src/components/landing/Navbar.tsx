@@ -16,14 +16,14 @@ const Navbar = () => {
             <div className="p-2 rounded-lg gradient-primary">
               <FileText className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-xl">SkillSync AI</span>
+            <span className="font-bold text-xl">AI Resume Scout</span>
           </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+            {/* <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a> */}
           </div>
 
           <div className="hidden md:flex items-center gap-4">

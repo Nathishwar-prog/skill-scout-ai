@@ -76,5 +76,56 @@ async def compute_similarity(request: SimilarityRequest):
         logger.error(f"Error computing similarity: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class RankRequest(BaseModel):
+    query: str
+    candidates: list[str]
+    top_k: int = 5
+
+class RankResponse(BaseModel):
+    ranked_results: list[dict] # [{"index": int, "score": float, "text": str}]
+
+@app.post("/rank", response_model=RankResponse)
+async def rank_candidates(request: RankRequest):
+    if not model:
+        raise HTTPException(status_code=500, detail="Model not initialized")
+    
+    try:
+        query_embedding = model.encode(request.query, convert_to_tensor=True)
+        candidate_embeddings = model.encode(request.candidates, convert_to_tensor=True)
+
+        # Compute cosine similarity
+        cosine_scores = util.cos_sim(query_embedding, candidate_embeddings)[0]
+
+        # Use torch.topk for efficient ranking
+        top_results = []
+        # If fewer candidates than top_k, take all
+        k = min(request.top_k, len(request.candidates))
+        
+        # Sort manually to avoid heavy torch dependency if not needed, but torch is already there
+        # Convert to list for easy handling
+        scores_list = cosine_scores.tolist()
+        
+        # Create (score, index) pairs
+        indexed_scores = [(score, i) for i, score in enumerate(scores_list)]
+        # Sort descending
+        indexed_scores.sort(key=lambda x: x[0], reverse=True)
+        
+        # Take top k
+        top_k_indices = indexed_scores[:k]
+        
+        results = []
+        for score, idx in top_k_indices:
+            results.append({
+                "index": idx,
+                "score": float(score),
+                "text": request.candidates[idx]
+            })
+            
+        return RankResponse(ranked_results=results)
+
+    except Exception as e:
+        logger.error(f"Error computing rank: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -42,7 +42,7 @@ const Signup = () => {
           <div className="p-2 rounded-lg gradient-primary">
             <FileText className="h-6 w-6 text-primary-foreground" />
           </div>
-          <span className="font-bold text-2xl">SkillSync AI</span>
+          <span className="font-bold text-2xl">AI Resume Scout</span>
         </Link>
 
         <Card className="border-border/50">

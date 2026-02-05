@@ -9,7 +9,7 @@ const Hero = () => {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
           <Sparkles className="h-4 w-4" />
-          <span className="text-sm font-medium">AI-Powered Resume Analysis</span>
+          <span className="text-sm font-medium">AI-Powered Resume Analysis and Rewriting</span>
         </div>
 
         {/* Headline */}
@@ -39,10 +39,10 @@ const Hero = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto animate-fade-in">
+        {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto animate-fade-in">
           {[
             { icon: Target, value: '95%', label: 'ATS Accuracy' },
-            { icon: TrendingUp, value: '50K+', label: 'Resumes Analyzed' },
+            // { icon: TrendingUp, value: '50K+', label: 'Resumes Analyzed' },
             { icon: Sparkles, value: '85%', label: 'Success Rate' },
             { icon: Upload, value: '10s', label: 'Analysis Time' },
           ].map((stat, index) => (
@@ -54,7 +54,7 @@ const Hero = () => {
               <div className="text-sm text-muted-foreground">{stat.label}</div>
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
 
       {/* Background Effects */}

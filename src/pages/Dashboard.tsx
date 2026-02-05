@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ResumeUpload from '@/components/dashboard/ResumeUpload';
 import JDAnalysisResults from '@/components/dashboard/JDAnalysisResults';
-import ResumeImprovements from '@/components/dashboard/ResumeImprovements';
+import ResumeImprovementsComponent from '@/components/dashboard/ResumeImprovements';
 import ResumeBuilder from '@/components/dashboard/ResumeBuilder';
 import AnalysisHistory from '@/components/dashboard/AnalysisHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { JDAnalysisResult, ResumeImprovements, ImprovedResume, AnalysisHistoryRecord } from '@/types';
 import {
   FileText,
   TrendingUp,
@@ -27,24 +28,58 @@ import {
 const Dashboard = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams(); // Get ID from URL
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [jdAnalysis, setJdAnalysis] = useState<any>(null);
-  const [improvements, setImprovements] = useState<any>(null);
+  const [jdAnalysis, setJdAnalysis] = useState<JDAnalysisResult | null>(null);
+  const [improvements, setImprovements] = useState<ResumeImprovements | null>(null);
   const [resumeText, setResumeText] = useState<string>('');
   const [jobDescription, setJobDescription] = useState<string>('');
 
   // New states for regenerate and resume builder
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
-  const [improvedResume, setImprovedResume] = useState<any>(null);
+  const [improvedResume, setImprovedResume] = useState<ImprovedResume | null>(null);
 
+  // Fetch analysis if ID is present
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/login');
+    if (id && user) {
+      const fetchAnalysisById = async () => {
+        setIsAnalyzing(true);
+        try {
+          const { data, error } = await supabase
+            .from('analysis_history')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (error) throw error;
+          if (data) {
+            setResumeText(data.resume_text);
+            setJobDescription(data.job_description);
+            setJdAnalysis(data.analysis_results as unknown as JDAnalysisResult);
+            setImprovements(null);
+            setImprovedResume(null);
+            setActiveTab('overview');
+          }
+        } catch (error) {
+          console.error("Error fetching analysis:", error);
+          toast({
+            title: "Error",
+            description: "Could not load analysis",
+            variant: "destructive"
+          });
+          navigate('/dashboard'); // Fallback
+        } finally {
+          setIsAnalyzing(false);
+        }
+      };
+
+      fetchAnalysisById();
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [id, user, navigate, toast]);
+
 
   const handleResumeUpload = async (content: string, jd: string, fileName?: string) => {
     setIsAnalyzing(true);
@@ -118,11 +153,12 @@ const Dashboard = () => {
         description: 'Your resume has been analyzed against the job description.'
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Resume analysis error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: 'Analysis Failed',
-        description: error.message || 'Could not analyze resume. Please try again.',
+        description: errorMessage || 'Could not analyze resume. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -130,17 +166,9 @@ const Dashboard = () => {
     }
   };
 
-  const handleSelectHistoryAnalysis = (record: any) => {
-    setResumeText(record.resume_text);
-    setJobDescription(record.job_description);
-    setJdAnalysis(record.analysis_results);
-    setImprovements(null); // Clear improvements when loading from history
-    setImprovedResume(null); // Clear built resume
-    setActiveTab('overview');
-    toast({
-      title: 'Analysis Loaded',
-      description: 'Viewing saved analysis from history'
-    });
+  const handleSelectHistoryAnalysis = (record: AnalysisHistoryRecord) => {
+    // Navigate to the URL instead of setting state directly
+    navigate(`/dashboard/analysis/${record.id}`);
   };
 
   // Regenerate improvements for historical analysis
@@ -184,11 +212,12 @@ const Dashboard = () => {
         title: 'Improvements Generated!',
         description: 'AI suggestions are ready for review.'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Generate improvements error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: 'Generation Failed',
-        description: error.message || 'Could not generate improvements.',
+        description: errorMessage || 'Could not generate improvements.',
         variant: 'destructive'
       });
     } finally {
@@ -241,11 +270,12 @@ const Dashboard = () => {
         title: 'Resume Built!',
         description: 'Your improved resume is ready to download.'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Build resume error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: 'Build Failed',
-        description: error.message || 'Could not build improved resume.',
+        description: errorMessage || 'Could not build improved resume.',
         variant: 'destructive'
       });
     } finally {
@@ -408,7 +438,7 @@ const Dashboard = () => {
             onClose={() => setImprovedResume(null)}
           />
         ) : improvements ? (
-          <ResumeImprovements
+          <ResumeImprovementsComponent
             {...improvements}
             onBuildResume={handleGenerateImprovedResume}
             isBuilding={isGeneratingResume}

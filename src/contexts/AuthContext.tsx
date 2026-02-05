@@ -38,25 +38,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (error: unknown) {
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(errorMessage);
+    }
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: name }
-      }
-    });
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: name }
+        }
+      });
+      if (error) throw error;
+    } catch (error: unknown) {
+      console.error('Signup error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(errorMessage);
+    }
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error: unknown) {
+      console.error('Logout error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(errorMessage);
+    }
   };
 
   return (

@@ -41,7 +41,7 @@ interface JDAnalysis {
     requiredYears: string;
     candidateYears: string;
     experienceMatch: string;
-    relevantExperience: string[];
+    relevantExperience: any[];
   };
   keywordAnalysis: {
     matchedKeywords: string[];
@@ -107,9 +107,9 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
     <div className="space-y-6">
       {/* Overall Verdict Banner */}
       <Card className={`border-2 ${analysis.overallVerdict.includes('Strong') ? 'border-success bg-success/5' :
-          analysis.overallVerdict.includes('Good') ? 'border-success/70 bg-success/5' :
-            analysis.overallVerdict.includes('Moderate') ? 'border-warning bg-warning/5' :
-              'border-destructive bg-destructive/5'
+        analysis.overallVerdict.includes('Good') ? 'border-success/70 bg-success/5' :
+          analysis.overallVerdict.includes('Moderate') ? 'border-warning bg-warning/5' :
+            'border-destructive bg-destructive/5'
         }`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -371,9 +371,9 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">Match Level</p>
               <p className={`font-semibold ${experienceAnalysis.experienceMatch === 'Exceeds' ? 'text-success' :
-                  experienceAnalysis.experienceMatch === 'Meets' ? 'text-success' :
-                    experienceAnalysis.experienceMatch === 'Below' ? 'text-warning' :
-                      'text-destructive'
+                experienceAnalysis.experienceMatch === 'Meets' ? 'text-success' :
+                  experienceAnalysis.experienceMatch === 'Below' ? 'text-warning' :
+                    'text-destructive'
                 }`}>
                 {experienceAnalysis.experienceMatch}
               </p>
@@ -383,10 +383,17 @@ const JDAnalysisResults = ({ analysis }: JDAnalysisResultsProps) => {
             <div>
               <p className="text-sm font-medium mb-2">Relevant Experience:</p>
               <ul className="space-y-1">
-                {experienceAnalysis.relevantExperience.map((exp, index) => (
+                {experienceAnalysis.relevantExperience.map((exp: any, index: number) => (
                   <li key={index} className="flex items-start gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                    {exp}
+                    {typeof exp === 'string' ? (
+                      exp
+                    ) : (
+                      <span>
+                        <span className="font-semibold">{exp.role}</span> at <span className="font-medium">{exp.company}</span>
+                        {exp.duration && <span className="text-muted-foreground ml-1">({exp.duration})</span>}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

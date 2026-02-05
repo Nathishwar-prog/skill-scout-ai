@@ -12,12 +12,12 @@ const Footer = () => {
               <div className="p-2 rounded-lg gradient-primary">
                 <FileText className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-bold text-xl">SkillSync AI</span>
+              <span className="font-bold text-xl">AI Resume Scout</span>
             </Link>
             <p className="text-muted-foreground text-sm mb-4">
               AI-powered resume analysis for job seekers. Get your resume job-ready in minutes.
             </p>
-            <div className="flex items-center gap-4">
+            {/* <div className="flex items-center gap-4">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 <Twitter className="h-5 w-5" />
               </a>
@@ -27,7 +27,7 @@ const Footer = () => {
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 <Github className="h-5 w-5" />
               </a>
-            </div>
+            </div> */}
           </div>
 
           {/* Product */}

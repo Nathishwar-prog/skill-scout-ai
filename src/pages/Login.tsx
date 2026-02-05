@@ -38,13 +38,13 @@ const Login = () => {
           <div className="p-2 rounded-lg gradient-primary">
             <FileText className="h-6 w-6 text-primary-foreground" />
           </div>
-          <span className="font-bold text-2xl">SkillSync AI</span>
+          <span className="font-bold text-2xl">AI Resume Scout</span>
         </Link>
 
         <Card className="border-border/50">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Welcome Back</CardTitle>
-            <CardDescription>Log in to continue your job search journey</CardDescription>
+            <CardDescription>Log in to continue upgrade your resume</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
