@@ -1,3 +1,6 @@
 project_id = "goejmboymnwhmqpczedn"
 
 [functions]
+
+[analytics]
+enabled = false

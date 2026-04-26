@@ -62,20 +62,23 @@ const ResumeUpload = ({ onUpload, isLoading }: ResumeUploadProps) => {
   };
 
   const handleTextSubmit = () => {
-    if (resumeText.trim() && jobDescription.trim()) {
-      onUpload(resumeText, jobDescription, 'pasted-resume.txt');
+    if (resumeText.trim()) {
+      const jd = jobDescription.trim() || 'General Position / Software Engineer. Evaluate general strengths and weaknesses.';
+      onUpload(resumeText, jd, 'pasted-resume.txt');
     }
   };
 
   const handleFileSubmit = () => {
-    if (pendingFile && jobDescription.trim()) {
-      onUpload(pendingFile.content, jobDescription, pendingFile.name);
+    if (pendingFile) {
+      const jd = jobDescription.trim() || 'General Position / Software Engineer. Evaluate general strengths and weaknesses.';
+      onUpload(pendingFile.content, jd, pendingFile.name);
       setPendingFile(null);
     }
   };
 
-  const canAnalyzeText = resumeText.trim() && jobDescription.trim();
-  const canAnalyzeFile = pendingFile && jobDescription.trim();
+  // Changed to allow analysis without JD for general resume feedback
+  const canAnalyzeText = resumeText.trim();
+  const canAnalyzeFile = pendingFile !== null;
 
   return (
     <div className="space-y-6">
@@ -91,7 +94,7 @@ const ResumeUpload = ({ onUpload, isLoading }: ResumeUploadProps) => {
                 Job Description
               </Label>
               <p className="text-sm text-muted-foreground">
-                Required for ATS score & match analysis
+                Optional: Add for ATS score & match analysis
               </p>
             </div>
           </div>
@@ -165,7 +168,7 @@ We are looking for a Senior Software Engineer with:
                           {pendingFile.name}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Resume uploaded. {jobDescription.trim() ? 'Click Analyze to start.' : 'Add job description above to analyze.'}
+                          Resume uploaded. Click Analyze to start.
                         </p>
                       </>
                     ) : (

@@ -55,7 +55,7 @@ const Navbar = () => {
             <div className="flex flex-col gap-4">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-              <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+              {/* <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a> */}
               {isAuthenticated ? (
                 <Button asChild>
                   <Link to="/dashboard">Dashboard</Link>

@@ -124,9 +124,9 @@ const DashboardLayout = ({ children, activeTab, onTabChange }: DashboardLayoutPr
             <h1 className="text-lg font-semibold capitalize">
               {tabs.find(t => t.id === activeTab)?.name || 'Dashboard'}
             </h1>
-            <Button size="sm" className="gradient-primary">
+            {/* <Button size="sm" className="gradient-primary">
               Upgrade to Pro
-            </Button>
+            </Button> */}
           </div>
         </header>
 
